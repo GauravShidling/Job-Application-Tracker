@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>Job Application Tracker</h1>
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="jobSearch" 
+                    placeholder="Enter job title (e.g., Software Engineer)"
+                    aria-label="Search jobs"
+                >
+                <button 
+                    onclick="fetchJobs()" 
+                    class="search-button"
+                    aria-label="Search"
+                >
+                    Search Jobs
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <section class="kanban-board" aria-label="Job tracking board">
+                <div class="column" id="job-list">
+                    <h2 class="column-header">Job Listings</h2>
+                    <div class="job-container" role="list"></div>
+                </div>
+                
+                <div class="column" id="applied">
+                    <h2 class="column-header">Applied</h2>
+                    <div class="job-container" role="list"></div>
+                </div>
+                
+                <div class="column" id="interview">
+                    <h2 class="column-header">Interview</h2>
+                    <div class="job-container" role="list"></div>
+                </div>
+                
+                <div class="column" id="offer">
+                    <h2 class="column-header">Offer</h2>
+                    <div class="job-container" role="list"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

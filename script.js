@@ -4,6 +4,17 @@ let closeBtn = null;
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Add event listener for Enter key on search input
+    const searchInput = document.getElementById("jobSearch");
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
+                fetchJobs();
+            }
+        });
+    }
+
     modal = document.getElementById("scheduleModal");
     closeBtn = document.querySelector('.close');
     
@@ -20,6 +31,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
+
+    // Clear any default content first
+    clearDefaultContent();
+    
+    // Load saved positions from localStorage
+    loadSavedPositions();
+    
+    // Load saved interviews
+    loadSavedInterviews();
 });
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -69,6 +89,73 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Load saved job positions from localStorage on page load
     loadJobPositions();
+
+    const pastInterviewsContainer = document.querySelector("#interview .job-container");
+    const offerContainer = document.querySelector("#offer .job-container");
+
+    if (pastInterviewsContainer && offerContainer) {
+        // Make past interviews draggable
+        pastInterviewsContainer.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const dragging = document.querySelector(".dragging");
+            if (dragging && dragging.classList.contains('past-interview-card')) {
+                pastInterviewsContainer.classList.add("drag-hover");
+            }
+        });
+
+        // Make offer section droppable
+        offerContainer.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const dragging = document.querySelector(".dragging");
+            // Only allow past interview cards to be dropped
+            if (dragging && dragging.classList.contains('past-interview-card')) {
+                offerContainer.classList.add("drag-hover");
+            }
+        });
+
+        offerContainer.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            offerContainer.classList.remove("drag-hover");
+        });
+
+        offerContainer.addEventListener("drop", (e) => {
+            e.preventDefault();
+            offerContainer.classList.remove("drag-hover");
+            const dragging = document.querySelector(".dragging");
+            if (dragging && dragging.classList.contains('past-interview-card')) {
+                // Remove the status tag when moving to offer section
+                const statusTag = dragging.querySelector('.status');
+                if (statusTag) {
+                    statusTag.remove();
+                }
+                
+                dragging.classList.remove("dragging");
+                // Add a nice drop animation
+                dragging.classList.add("dropped");
+                offerContainer.appendChild(dragging);
+                setTimeout(() => {
+                    dragging.classList.remove("dropped");
+                }, 300);
+                saveJobPositions();
+            }
+        });
+
+        // Prevent dropping on other sections
+        const jobListContainer = document.querySelector("#job-list .job-container");
+        const appliedContainer = document.querySelector("#applied .job-container");
+
+        [jobListContainer, appliedContainer].forEach(container => {
+            if (container) {
+                container.addEventListener("dragover", (e) => {
+                    const dragging = document.querySelector(".dragging");
+                    if (dragging && dragging.classList.contains('past-interview-card')) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "none"; // Show "not-allowed" cursor
+                    }
+                });
+            }
+        });
+    }
 });
 
 // Helper function to get the closest job item below the cursor
@@ -108,6 +195,15 @@ async function fetchJobs() {
 
         if (data.results && data.results.length > 0) {
             displayJobs(data.results);
+            
+            // Scroll to job listings section
+            const jobListSection = document.getElementById("job-list");
+            if (jobListSection) {
+                jobListSection.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start'
+                });
+            }
         } else {
             alert("No jobs found. Try another search.");
         }
@@ -143,7 +239,7 @@ function displayJobs(jobs) {
                 <p><strong>Company:</strong> ${job.company.display_name}</p>
                 <p><strong>Location:</strong> ${job.location.display_name}</p>
                 <div class="job-actions">
-                    <a href="${job.redirect_url}" target="_blank" class="apply-btn">Apply Now</a>
+                    <a href="${job.redirect_url}" target="_blank" class="apply-btn" data-job-id="${job.id}">Apply Now</a>
                     <button class="schedule-interview" disabled>Schedule Interview</button>
                 </div>
             </div>
@@ -154,6 +250,15 @@ function displayJobs(jobs) {
         if (scheduleBtn) {
             scheduleBtn.addEventListener('click', () => {
                 handleScheduleInterview(job.title, job.company.display_name, jobItem);
+            });
+        }
+
+        // Add apply button functionality
+        const applyBtn = jobItem.querySelector('.apply-btn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', (e) => {
+                // Don't prevent default - let the link open in new tab
+                handleJobApply(jobItem, job);
             });
         }
 
@@ -195,6 +300,110 @@ function displayJobs(jobs) {
         console.log("Error in initial save:", error);
     }
 }
+
+// Function to handle job application
+function handleJobApply(jobItem, jobData) {
+    // Get the Applied section container
+    const appliedContainer = document.querySelector("#applied .job-container");
+    if (!appliedContainer) return;
+
+    // Wait a brief moment to ensure the link click is processed
+    setTimeout(() => {
+        // Clone the job item
+        const clonedItem = jobItem.cloneNode(true);
+        
+        // Remove the Apply Now button from the cloned item
+        const jobActions = clonedItem.querySelector('.job-actions');
+        const applyBtn = clonedItem.querySelector('.apply-btn');
+        if (applyBtn) {
+            applyBtn.remove();
+        }
+        
+        // Add animation class for smooth transition
+        clonedItem.classList.add('move-to-applied');
+        
+        // Re-attach event listeners to the cloned item
+        attachJobItemEventListeners(clonedItem, jobData);
+        
+        // Add to Applied section
+        appliedContainer.appendChild(clonedItem);
+        
+        // Remove original item from job listings with animation
+        jobItem.style.opacity = '0';
+        jobItem.style.transform = 'scale(0.9)';
+        jobItem.style.transition = 'all 0.3s ease';
+        
+        setTimeout(() => {
+            jobItem.remove();
+            // Save the updated positions
+            saveJobPositions();
+        }, 300);
+    }, 100);
+}
+
+// Function to attach event listeners to job items
+function attachJobItemEventListeners(jobItem, jobData) {
+    // Reattach schedule interview button listener
+    const scheduleBtn = jobItem.querySelector('.schedule-interview');
+    if (scheduleBtn) {
+        scheduleBtn.addEventListener('click', () => {
+            handleScheduleInterview(jobData.title, jobData.company.display_name, jobItem);
+        });
+    }
+
+    // Only reattach apply button listener if it exists (not in Applied section)
+    const applyBtn = jobItem.querySelector('.apply-btn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', (e) => {
+            handleJobApply(jobItem, jobData);
+        });
+    }
+
+    // Reattach delete button listener
+    const deleteBtn = jobItem.querySelector('.delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            jobItem.classList.add('fade-out');
+            setTimeout(() => {
+                jobItem.remove();
+                saveJobPositions();
+            }, 300);
+        });
+    }
+
+    // Reattach drag events
+    jobItem.addEventListener("dragstart", (e) => {
+        e.dataTransfer.effectAllowed = "move";
+        jobItem.classList.add("dragging");
+    });
+
+    jobItem.addEventListener("dragend", () => {
+        jobItem.classList.remove("dragging");
+        saveJobPositions();
+    });
+}
+
+// Add this CSS animation
+const style = document.createElement('style');
+style.textContent += `
+    @keyframes moveToApplied {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .move-to-applied {
+        animation: moveToApplied 0.5s ease-in-out;
+    }
+`;
+document.head.appendChild(style);
 
 // 🔹 Save Job Positions in LocalStorage
 function saveJobPositions() {
@@ -246,8 +455,10 @@ function loadJobPositions() {
 function createJobItem(job) {
     const jobItem = document.createElement("div");
     jobItem.classList.add("job-item");
-    jobItem.draggable = true;
     jobItem.dataset.jobId = job.jobId;
+
+    // Check if this is for the Applied section
+    const isApplied = job.company.startsWith('Company:');
 
     jobItem.innerHTML = `
         <div class="job-header">
@@ -258,7 +469,10 @@ function createJobItem(job) {
             <p>${job.company}</p>
             <p>${job.location}</p>
             <div class="job-actions">
-                <a href="${job.applyLink}" target="_blank" class="apply-btn">Apply Now</a>
+                ${!isApplied ? 
+                    `<a href="${job.applyLink}" target="_blank" class="apply-btn">Apply Now</a>` 
+                    : ''
+                }
                 <button class="schedule-interview" ${window.gapiInited && window.gisInited ? '' : 'disabled'}>Schedule Interview</button>
             </div>
         </div>
@@ -267,8 +481,23 @@ function createJobItem(job) {
     // Add event listeners
     const deleteBtn = jobItem.querySelector('.delete-btn');
     deleteBtn.addEventListener('click', () => {
+        // Add fade out animation
         jobItem.classList.add('fade-out');
+        
         setTimeout(() => {
+            // Get the parent column to identify which section this job is in
+            const parentColumn = jobItem.closest('.column');
+            if (parentColumn && parentColumn.id === 'applied') {
+                // Remove from localStorage if in Applied section
+                const savedPositions = getFromLocalStorage('jobPositions') || {};
+                Object.entries(savedPositions).forEach(([columnIndex, jobs]) => {
+                    savedPositions[columnIndex] = jobs.filter(savedJob => 
+                        savedJob.jobId !== job.jobId
+                    );
+                });
+                saveToLocalStorage('jobPositions', savedPositions);
+            }
+            
             jobItem.remove();
             saveJobPositions();
         }, 300);
@@ -282,16 +511,13 @@ function createJobItem(job) {
         });
     }
 
-    // Add drag events
-    jobItem.addEventListener("dragstart", (e) => {
-        e.dataTransfer.effectAllowed = "move";
-        jobItem.classList.add("dragging");
-    });
-
-    jobItem.addEventListener("dragend", () => {
-        jobItem.classList.remove("dragging");
-        saveJobPositions();
-    });
+    // Only add apply button listener if it exists
+    const applyBtn = jobItem.querySelector('.apply-btn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', (e) => {
+            handleJobApply(jobItem, job);
+        });
+    }
 
     return jobItem;
 }
@@ -348,6 +574,13 @@ function showScheduleModal(jobTitle, companyName, jobItem) {
         return;
     }
 
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('interviewDate');
+    if (dateInput) {
+        dateInput.min = today;
+    }
+
     const titleInput = document.getElementById('interviewTitle');
     if (titleInput) {
         titleInput.value = `Interview for ${jobTitle} at ${companyName}`;
@@ -364,23 +597,8 @@ function showScheduleModal(jobTitle, companyName, jobItem) {
                 modal.style.display = "none";
                 form.reset();
                 
-                // Move job card to interview section
-                const interviewContainer = document.querySelector("#interview .job-container");
-                if (interviewContainer && jobItem) {
-                    // Add animation class
-                    jobItem.classList.add('move-to-interview');
-                    
-                    // Wait for animation to complete
-                    setTimeout(() => {
-                        interviewContainer.appendChild(jobItem);
-                        jobItem.classList.remove('move-to-interview');
-                        saveJobPositions(); // Save the new positions
-                    }, 500);
-                    
-                    alert("Interview scheduled successfully! Job moved to Interview section.");
-                } else {
-                    alert("Interview scheduled successfully!");
-                }
+                // Remove the old job movement logic
+                alert("Interview scheduled successfully!");
             } catch (error) {
                 console.error("Error scheduling interview:", error);
                 alert("Error scheduling interview. Please try again.");
@@ -391,47 +609,61 @@ function showScheduleModal(jobTitle, companyName, jobItem) {
 
 // Add createCalendarEvent function if not already present
 async function createCalendarEvent() {
+    const form = document.getElementById('scheduleForm');
     const title = document.getElementById('interviewTitle').value;
     const date = document.getElementById('interviewDate').value;
     const time = document.getElementById('interviewTime').value;
-    const duration = parseInt(document.getElementById('duration').value);
-    const participants = document.getElementById('participants').value
-        .split(',')
-        .map(email => ({ email: email.trim() }));
+    const duration = parseInt(document.getElementById('interviewDuration').value);
+    const participants = document.getElementById('participants').value;
+
+    if (!title || !date || !time || !duration) {
+        alert('Please fill in all required fields');
+        return;
+    }
 
     const startDateTime = new Date(`${date}T${time}`);
     const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
 
     const event = {
-        summary: title,
-        start: {
-            dateTime: startDateTime.toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        'summary': title,
+        'start': {
+            'dateTime': startDateTime.toISOString(),
+            'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
         },
-        end: {
-            dateTime: endDateTime.toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        },
-        attendees: participants,
-        reminders: {
-            useDefault: false,
-            overrides: [
-                { method: 'email', minutes: 24 * 60 },
-                { method: 'popup', minutes: 30 }
-            ]
+        'end': {
+            'dateTime': endDateTime.toISOString(),
+            'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
         }
     };
 
+    if (participants) {
+        event.attendees = participants.split(',').map(email => ({
+            'email': email.trim()
+        }));
+    }
+
     try {
-        const request = await gapi.client.calendar.events.insert({
-            calendarId: 'primary',
-            resource: event,
-            sendUpdates: 'all'
+        const response = await gapi.client.calendar.events.insert({
+            'calendarId': 'primary',
+            'resource': event,
+            'sendUpdates': 'all'
         });
-        return request.result;
-    } catch (error) {
-        console.error('Error creating calendar event:', error);
-        throw error;
+
+        // Add company name to the event data for the interview card
+        const eventData = response.result;
+        eventData.companyName = document.querySelector('#scheduleForm').getAttribute('data-company');
+
+        // Create and display the interview card
+        createInterviewCard(eventData);
+
+        // Close the modal and reset the form
+        modal.style.display = "none";
+        form.reset();
+
+        alert('Interview scheduled successfully!');
+    } catch (err) {
+        console.error('Error creating calendar event:', err);
+        alert('Error scheduling interview. Please try again.');
     }
 }
 
@@ -478,22 +710,198 @@ function clearDefaultContent() {
     });
 }
 
-// Update the DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', () => {
-    // Clear any default content first
-    clearDefaultContent();
+// Function to create and add an interview card
+function createInterviewCard(eventData) {
+    const container = document.querySelector('.interview-cards-container');
+    if (!container) return;
+
+    const card = document.createElement('div');
+    card.classList.add('interview-card');
+    card.dataset.eventId = eventData.id; // Store event ID for reference
     
-    // Then load saved positions from localStorage
-    loadSavedPositions();
-    
-    // Add drag and drop listeners to containers
-    document.querySelectorAll('.job-container').forEach(container => {
-        container.addEventListener('dragover', e => {
-            e.preventDefault();
-            const draggable = document.querySelector('.dragging');
-            if (draggable) {
-                container.appendChild(draggable);
-            }
-        });
+    const date = new Date(eventData.start.dateTime);
+    const formattedDate = date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
-});
+    const formattedTime = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    card.innerHTML = `
+        <h3>${eventData.summary}</h3>
+        <p class="company">${eventData.companyName || 'Company'}</p>
+        <div class="details">
+            <span>📅 ${formattedDate}</span>
+            <span>⏰ ${formattedTime}</span>
+            ${eventData.location ? `<span>📍 ${eventData.location}</span>` : ''}
+            ${eventData.hangoutLink ? `<span>🎥 Virtual Meeting</span>` : ''}
+        </div>
+        <div class="card-actions">
+            ${eventData.htmlLink ? 
+                `<a href="${eventData.htmlLink}" target="_blank" class="calendar-link">View in Calendar</a>` : 
+                ''
+            }
+            <button class="done-btn">Mark as Done</button>
+        </div>
+    `;
+
+    // Add click handler for done button
+    const doneBtn = card.querySelector('.done-btn');
+    doneBtn.addEventListener('click', () => markInterviewAsDone(eventData, card));
+
+    // Insert the new card at the beginning of the container
+    container.insertBefore(card, container.firstChild);
+    
+    // Save the interview to localStorage
+    saveInterview(eventData);
+}
+
+// Function to mark an interview as done
+function markInterviewAsDone(eventData, card) {
+    // Remove from upcoming interviews
+    card.remove();
+    
+    // Create past interview card
+    const pastContainer = document.querySelector('.past-interviews');
+    if (!pastContainer) return;
+
+    const pastCard = createPastInterviewCard({
+        ...eventData,
+        status: 'completed',
+        completedAt: new Date().toISOString()
+    });
+
+    // Add to past interviews section
+    pastContainer.insertBefore(pastCard, pastContainer.firstChild);
+
+    // Update localStorage
+    moveInterviewToPast(eventData);
+}
+
+// Function to move interview from upcoming to past in localStorage
+function moveInterviewToPast(eventData) {
+    let upcomingInterviews = getFromLocalStorage('upcomingInterviews') || [];
+    let pastInterviews = getFromLocalStorage('pastInterviews') || [];
+
+    // Remove from upcoming interviews
+    upcomingInterviews = upcomingInterviews.filter(interview => 
+        interview.id !== eventData.id
+    );
+
+    // Add to past interviews with completed status
+    const completedInterview = {
+        ...eventData,
+        status: 'completed',
+        completedAt: new Date().toISOString()
+    };
+    pastInterviews.unshift(completedInterview);
+
+    // Save both updated lists
+    saveToLocalStorage('upcomingInterviews', upcomingInterviews);
+    saveToLocalStorage('pastInterviews', pastInterviews);
+}
+
+// Function to load saved interviews
+function loadSavedInterviews() {
+    // Load upcoming interviews
+    const savedInterviews = getFromLocalStorage('upcomingInterviews') || [];
+    const upcomingContainer = document.querySelector('.interview-cards-container');
+    if (upcomingContainer) {
+        upcomingContainer.innerHTML = ''; // Clear existing cards
+    }
+    
+    savedInterviews.forEach(interview => {
+        createInterviewCard(interview);
+    });
+
+    // Load past interviews
+    const pastInterviews = getFromLocalStorage('pastInterviews') || [];
+    const pastContainer = document.querySelector('.past-interviews');
+    if (pastContainer) {
+        pastContainer.innerHTML = ''; // Clear existing cards
+        
+        pastInterviews.forEach(interview => {
+            const pastCard = createPastInterviewCard(interview);
+            pastContainer.appendChild(pastCard);
+        });
+    }
+}
+
+// Function to save interview to localStorage
+function saveInterview(eventData) {
+    const savedInterviews = getFromLocalStorage('upcomingInterviews') || [];
+    // Check if interview already exists
+    const exists = savedInterviews.some(interview => interview.id === eventData.id);
+    if (!exists) {
+        savedInterviews.unshift(eventData);
+        saveToLocalStorage('upcomingInterviews', savedInterviews);
+    }
+}
+
+// Function to delete past interview
+function deletePastInterview(interviewId) {
+    let pastInterviews = getFromLocalStorage('pastInterviews') || [];
+    
+    // Remove the interview from past interviews
+    pastInterviews = pastInterviews.filter(interview => interview.id !== interviewId);
+    
+    // Save the updated list
+    saveToLocalStorage('pastInterviews', pastInterviews);
+}
+
+// Function to create past interview card
+function createPastInterviewCard(interview) {
+    const pastCard = document.createElement('div');
+    pastCard.classList.add('past-interview-card');
+    pastCard.dataset.interviewId = interview.id;
+    pastCard.draggable = true; // Make card draggable
+    
+    const date = new Date(interview.start.dateTime);
+    const formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    pastCard.innerHTML = `
+        <button class="delete-past-btn" aria-label="Delete interview">×</button>
+        <span class="status">Completed</span>
+        <h4>${interview.summary}</h4>
+        <p class="company">${interview.companyName || 'Company'}</p>
+        <div class="details">
+            <p> ${formattedDate}</p>
+        </div>
+    `;
+
+    // Add delete functionality
+    const deleteBtn = pastCard.querySelector('.delete-past-btn');
+    deleteBtn.addEventListener('click', () => {
+        // Add fade out animation
+        pastCard.style.opacity = '0';
+        pastCard.style.transform = 'scale(0.9)';
+        pastCard.style.transition = 'all 0.3s ease';
+        
+        // Remove card and update localStorage after animation
+        setTimeout(() => {
+            pastCard.remove();
+            deletePastInterview(interview.id);
+        }, 300);
+    });
+
+    // Add drag events
+    pastCard.addEventListener("dragstart", (e) => {
+        e.dataTransfer.effectAllowed = "move";
+        pastCard.classList.add("dragging");
+    });
+
+    pastCard.addEventListener("dragend", () => {
+        pastCard.classList.remove("dragging");
+        saveJobPositions();
+    });
+
+    return pastCard;
+}

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Application Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="calendar-config.js"></script>
     <script src="https://apis.google.com/js/api.js" defer onload="gapiLoaded()"></script>
@@ -32,6 +35,11 @@
         </header>
 
         <main>
+            <section class="upcoming-interviews" aria-label="Upcoming interviews">
+                <h2>Upcoming Interviews</h2>
+                <div class="interview-cards-container" role="list"></div>
+            </section>
+
             <section class="kanban-board" aria-label="Job tracking board">
                 <div class="column" id="job-list">
                     <h2 class="column-header">Job Listings</h2>
@@ -44,8 +52,8 @@
                 </div>
                 
                 <div class="column" id="interview">
-                    <h2 class="column-header">Interview</h2>
-                    <div class="job-container" role="list"></div>
+                    <h2 class="column-header">Past Interviews</h2>
+                    <div class="job-container past-interviews" role="list"></div>
                 </div>
                 
                 <div class="column" id="offer">
@@ -56,41 +64,41 @@
         </main>
     </div>
 
-    <div id="scheduleModal" class="modal">
+    <div id="scheduleModal" class="modal" role="dialog" aria-labelledby="modalTitle">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Schedule Interview</h2>
-                <span class="close">&times;</span>
+                <h2 id="modalTitle">Schedule Interview</h2>
+                <button class="close" aria-label="Close modal">&times;</button>
             </div>
-            <div class="modal-body">
-                <form id="scheduleForm">
-                    <div class="form-group">
-                        <label for="interviewTitle">Interview Title</label>
-                        <input type="text" id="interviewTitle" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="interviewDate">Date</label>
-                        <input type="date" id="interviewDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="interviewTime">Time</label>
-                        <input type="time" id="interviewTime" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="duration">Duration (minutes)</label>
-                        <select id="duration">
-                            <option value="30">30 minutes</option>
-                            <option value="45">45 minutes</option>
-                            <option value="60">1 hour</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="participants">Participants (emails)</label>
-                        <input type="text" id="participants" placeholder="email1@example.com, email2@example.com">
-                    </div>
-                    <button type="submit" class="schedule-btn">Schedule Interview</button>
-                </form>
-            </div>
+            <form id="scheduleForm">
+                <div class="form-group">
+                    <label for="interviewTitle">Interview Title</label>
+                    <input type="text" id="interviewTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="interviewDate">Date</label>
+                    <input type="date" id="interviewDate" min="" required>
+                </div>
+                <div class="form-group">
+                    <label for="interviewTime">Time</label>
+                    <input type="time" id="interviewTime" min="09:00" required>
+                </div>
+                <div class="form-group">
+                    <label for="interviewDuration">Duration</label>
+                    <select id="interviewDuration" required>
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60">1 hour</option>
+                        <option value="90">1.5 hours</option>
+                        <option value="120">2 hours</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="participants">Participants (comma-separated emails)</label>
+                    <input type="text" id="participants" placeholder="email1@example.com, email2@example.com">
+                </div>
+                <button type="submit" class="schedule-btn">Schedule Interview</button>
+            </form>
         </div>
     </div>
 </body>

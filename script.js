@@ -597,8 +597,7 @@ function showScheduleModal(jobTitle, companyName, jobItem) {
                 modal.style.display = "none";
                 form.reset();
                 
-                // Remove the old job movement logic
-                alert("Interview scheduled successfully!");
+                // Removed duplicate success alert
             } catch (error) {
                 console.error("Error scheduling interview:", error);
                 alert("Error scheduling interview. Please try again.");

@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Application Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <script src="calendar-config.js"></script>
+    <script src="https://apis.google.com/js/api.js" defer onload="gapiLoaded()"></script>
+    <script src="https://accounts.google.com/gsi/client" defer onload="gisLoaded()"></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
     <div class="container">
@@ -52,6 +56,42 @@
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Schedule Interview</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <div class="form-group">
+                        <label for="interviewTitle">Interview Title</label>
+                        <input type="text" id="interviewTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="interviewDate">Date</label>
+                        <input type="date" id="interviewDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="interviewTime">Time</label>
+                        <input type="time" id="interviewTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (minutes)</label>
+                        <select id="duration">
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">1 hour</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="participants">Participants (emails)</label>
+                        <input type="text" id="participants" placeholder="email1@example.com, email2@example.com">
+                    </div>
+                    <button type="submit" class="schedule-btn">Schedule Interview</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

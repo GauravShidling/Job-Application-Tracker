@@ -1,50 +1,89 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f8fafc;
     text-align: center;
+    color: #1e293b;
 }
 
-header {
-    background: #4f46e5;
+html {
+    scroll-behavior: smooth;
+}
+
+.main-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
     color: white;
-    padding: 15px;
+    padding: 2rem 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.main-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.search-container {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 input {
-    padding: 10px;
-    margin: 10px;
-    width: 250px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 button {
-    padding: 10px;
+    padding: 0.75rem 1.5rem;
     background: #8b5cf6;
     color: white;
     border: none;
     cursor: pointer;
-    border-radius: 6px;
-    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 button:hover {
     background: #7c3aed;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 .kanban-board {
-    display: flex;
-    justify-content: space-around;
-    padding: 20px;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .column {
-    width: 22%;
     background: white;
-    padding: 15px;
+    padding: 1.5rem;
     border-radius: 12px;
     min-height: 300px;
     box-shadow: 0 4px 6px rgba(79, 70, 229, 0.1);
@@ -54,26 +93,33 @@ button:hover {
 
 .column:hover {
     transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.column-header {
+    color: #4f46e5;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    text-align: left;
 }
 
 .job-container {
-    min-height: 100px;
-    background: #eef2ff;
-    padding: 10px;
-    margin-top: 10px;
+    background: #f1f5f9;
+    padding: 1rem;
     border-radius: 8px;
+    min-height: 100px;
 }
 
 .job-item {
     background: #fff;
-    padding: 12px;
-    margin: 8px 5px;
+    padding: 1.25rem;
+    margin: 0.75rem 0;
     border-radius: 8px;
     cursor: grab;
-    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     border: 1px solid #e2e8f0;
-    transition: all 0.3s ease, transform 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .job-item:hover {
@@ -85,16 +131,22 @@ button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 1rem;
+}
+
+.job-header h4 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.1rem;
 }
 
 .delete-btn {
     background: none;
     border: none;
     color: #94a3b8;
-    font-size: 20px;
+    font-size: 1.25rem;
     cursor: pointer;
-    padding: 0 5px;
+    padding: 0.25rem 0.5rem;
     border-radius: 4px;
     transition: all 0.2s ease;
 }
@@ -102,35 +154,206 @@ button:hover {
 .delete-btn:hover {
     color: #ef4444;
     background: #fee2e2;
+    transform: none;
+    box-shadow: none;
 }
 
-.fade-out {
-    opacity: 0;
-    transform: scale(0.9);
+.job-details {
+    text-align: left;
 }
 
-.drag-hover {
-    background: #eef2ff;
-    border: 2px dashed #4f46e5;
+.job-details p {
+    margin: 0.5rem 0;
+    color: #64748b;
+    font-size: 0.95rem;
 }
 
-.dropped {
-    animation: dropEffect 0.3s ease;
+.job-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
 }
 
-@keyframes dropEffect {
-    0% {
-        transform: scale(1.05);
-    }
-    100% {
-        transform: scale(1);
-    }
+.apply-btn {
+    background: #4f46e5;
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-.dragging {
-    opacity: 0.7;
-    transform: scale(1.05);
-    cursor: grabbing;
+.apply-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+}
+
+.schedule-interview {
+    background: #8b5cf6;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+.schedule-interview:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.upcoming-interviews {
+    background: white;
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 1200px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(79, 70, 229, 0.1);
+}
+
+.upcoming-interviews h2 {
+    color: #4f46e5;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.interview-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.interview-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    transition: transform 0.3s ease;
+}
+
+.interview-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.interview-card h3 {
+    color: #1e293b;
+    margin: 0 0 0.75rem 0;
+    font-size: 1.2rem;
+}
+
+.interview-card .company {
+    color: #4f46e5;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.interview-card .details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.interview-card .details span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.calendar-link {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+.calendar-link:hover {
+    color: #4338ca;
+    text-decoration: underline;
+}
+
+.done-btn {
+    background: #22c55e;
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+}
+
+.done-btn:hover {
+    background: #16a34a;
+}
+
+.past-interview-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.past-interview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.past-interview-card .status {
+    display: inline-block;
+    background: #22c55e;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
+
+.past-interview-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.past-interview-card .company {
+    color: #4f46e5;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
+
+.past-interview-card .details {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.delete-past-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+}
+
+.delete-past-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    transform: none;
+    box-shadow: none;
 }
 
 .modal {
@@ -142,70 +365,37 @@ button:hover {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    overflow-y: auto;
+    backdrop-filter: blur(4px);
 }
 
 .modal-content {
     background-color: white;
     margin: 5% auto;
-    padding: 20px;
+    padding: 2rem;
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
     position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    position: sticky;
-    top: 0;
-    background: white;
-    padding: 10px 0;
-    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 1.5rem;
 }
 
-.modal-body {
-    padding: 0 10px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #4f46e5;
-    font-weight: 500;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 16px;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+.modal-header h2 {
+    color: #1e293b;
+    margin: 0;
+    font-size: 1.5rem;
 }
 
 .close {
+    position: absolute;
+    right: 1.5rem;
+    top: 1.5rem;
+    font-size: 1.5rem;
     color: #94a3b8;
-    font-size: 28px;
-    font-weight: bold;
     cursor: pointer;
-    padding: 0 10px;
     transition: color 0.2s ease;
 }
 
@@ -213,94 +403,67 @@ button:hover {
     color: #ef4444;
 }
 
-.schedule-btn {
-    background: #4f46e5;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 100%;
-    font-size: 16px;
+.form-group {
+    margin-bottom: 1.25rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #1e293b;
     font-weight: 500;
-    transition: background-color 0.2s ease;
-    margin-top: 20px;
-    margin-bottom: 10px;
 }
 
-.schedule-btn:hover {
-    background: #4338ca;
-}
-
-.schedule-interview {
-    background: #8b5cf6;
-    color: white;
-    padding: 8px 12px;
-    border: none;
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
     border-radius: 6px;
-    margin-top: 10px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    font-size: 1rem;
+    transition: all 0.2s ease;
 }
 
-.schedule-interview:hover {
-    background: #7c3aed;
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-.schedule-interview:disabled {
-    background: #cbd5e1;
-    cursor: not-allowed;
-}
-
-.job-details {
-    margin-top: 10px;
-}
-
-.job-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.apply-btn {
-    background: #4f46e5;
-    color: white;
-    text-decoration: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    transition: background-color 0.2s ease;
-}
-
-.apply-btn:hover {
-    background: #4338ca;
-}
-
-/* Make sure form elements don't get cut off on mobile */
 @media (max-width: 768px) {
+    .kanban-board {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .interview-cards-container {
+        grid-template-columns: 1fr;
+    }
+
     .modal-content {
         margin: 10px;
         width: calc(100% - 20px);
-        max-height: calc(100vh - 20px);
+        padding: 1.5rem;
+    }
+
+    .search-container {
+        flex-direction: column;
+        padding: 0 1rem;
+    }
+
+    input {
+        width: calc(100% - 2rem);
     }
 }
 
-@keyframes moveToInterview {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-    100% {
-        transform: scale(1);
-    }
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.move-to-interview {
-    animation: moveToInterview 0.5s ease-in-out;
-}
-
-.job-item {
-    transition: all 0.3s ease;
+.job-item, .interview-card, .past-interview-card {
+    animation: fadeIn 0.3s ease-out;
 }

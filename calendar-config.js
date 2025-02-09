@@ -1,4 +1,3 @@
-// Make variables globally accessible
 window.gapiInited = false;
 window.gisInited = false;
 window.tokenClient = null;
@@ -53,7 +52,7 @@ function maybeEnableButtons() {
     }
 }
 
-// Export functions to global scope
+//functions to global scope
 window.gapiLoaded = gapiLoaded;
 window.gisLoaded = gisLoaded;
 

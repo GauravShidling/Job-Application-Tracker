@@ -2,7 +2,8 @@
 
 A modern, interactive web application for tracking job applications, interviews, and offers. Built with vanilla JavaScript and integrated with Google Calendar for seamless interview scheduling.
 
-![Job Application Tracker](https://your-screenshot-url-here.png)
+![Job Application Tracker](![image](https://github.com/user-attachments/assets/d7eec19e-4939-4e63-b086-4be53f5f7a62)
+)
 
 ## Features
 

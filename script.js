@@ -1,10 +1,9 @@
-// Add this at the beginning of your script.js
 let modal = null;
 let closeBtn = null;
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Add event listener for Enter key on search input
+    // event listener for Enter key on search input
     const searchInput = document.getElementById("jobSearch");
     if (searchInput) {
         searchInput.addEventListener('keypress', (e) => {
@@ -35,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear any default content first
     clearDefaultContent();
     
-    // Load saved positions from localStorage
+    // Load saved positions from localStorage - only call this once
     loadSavedPositions();
     
     // Load saved interviews
@@ -45,51 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener("DOMContentLoaded", function () {
     const jobContainers = document.querySelectorAll(".job-container");
 
-    jobContainers.forEach(container => {
-        // Highlight drop zones
-        container.addEventListener("dragenter", (e) => {
-            e.preventDefault();
-            container.classList.add("drag-hover");
-        });
-
-        container.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            container.classList.remove("drag-hover");
-        });
-
-        container.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            const dragging = document.querySelector(".dragging");
-            if (!dragging) return;
-
-            const closestItem = getClosestJobItem(container, e.clientY);
-            
-            if (closestItem) {
-                container.insertBefore(dragging, closestItem);
-            } else {
-                container.appendChild(dragging);
-            }
-        });
-
-        container.addEventListener("drop", (e) => {
-            e.preventDefault();
-            container.classList.remove("drag-hover");
-            const dragging = document.querySelector(".dragging");
-            if (dragging) {
-                dragging.classList.remove("dragging");
-                // Add a nice drop animation
-                dragging.classList.add("dropped");
-                setTimeout(() => {
-                    dragging.classList.remove("dropped");
-                }, 300);
-                saveJobPositions();
-            }
-        });
-    });
-
-    // Load saved job positions from localStorage on page load
-    loadJobPositions();
-
+    // Only add drag and drop functionality to interview and offer sections
     const pastInterviewsContainer = document.querySelector("#interview .job-container");
     const offerContainer = document.querySelector("#offer .job-container");
 
@@ -103,11 +58,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+        pastInterviewsContainer.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            pastInterviewsContainer.classList.remove("drag-hover");
+        });
+
         // Make offer section droppable
         offerContainer.addEventListener("dragover", (e) => {
             e.preventDefault();
             const dragging = document.querySelector(".dragging");
-            // Only allow past interview cards to be dropped
             if (dragging && dragging.classList.contains('past-interview-card')) {
                 offerContainer.classList.add("drag-hover");
             }
@@ -136,22 +95,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 setTimeout(() => {
                     dragging.classList.remove("dropped");
                 }, 300);
-                saveJobPositions();
+                
+                // Update the interview's section in localStorage
+                const interviewId = dragging.dataset.interviewId;
+                if (interviewId) {
+                    updateInterviewSection(interviewId, 'offer');
+                }
             }
         });
 
-        // Prevent dropping on other sections
+        // Prevent dropping on job-list and applied sections
         const jobListContainer = document.querySelector("#job-list .job-container");
         const appliedContainer = document.querySelector("#applied .job-container");
 
         [jobListContainer, appliedContainer].forEach(container => {
             if (container) {
                 container.addEventListener("dragover", (e) => {
-                    const dragging = document.querySelector(".dragging");
-                    if (dragging && dragging.classList.contains('past-interview-card')) {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "none"; // Show "not-allowed" cursor
-                    }
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "none"; // Show "not-allowed" cursor
                 });
             }
         });
@@ -227,7 +188,7 @@ function displayJobs(jobs) {
     jobs.slice(0, 5).forEach(job => {
         const jobItem = document.createElement("div");
         jobItem.classList.add("job-item");
-        jobItem.draggable = true;
+        jobItem.draggable = false; // Job listings should not be draggable
         jobItem.dataset.jobId = job.id;
 
         jobItem.innerHTML = `
@@ -238,26 +199,17 @@ function displayJobs(jobs) {
             <div class="job-details">
                 <p><strong>Company:</strong> ${job.company.display_name}</p>
                 <p><strong>Location:</strong> ${job.location.display_name}</p>
+                <p class="job-link"><strong>Job Link:</strong> <a href="${job.redirect_url}" target="_blank">View Job Details</a></p>
                 <div class="job-actions">
-                    <a href="${job.redirect_url}" target="_blank" class="apply-btn" data-job-id="${job.id}">Apply Now</a>
-                    <button class="schedule-interview" disabled>Schedule Interview</button>
+                    <button class="apply-btn">Apply</button>
                 </div>
             </div>
         `;
 
-        // Add event listeners
-        const scheduleBtn = jobItem.querySelector('.schedule-interview');
-        if (scheduleBtn) {
-            scheduleBtn.addEventListener('click', () => {
-                handleScheduleInterview(job.title, job.company.display_name, jobItem);
-            });
-        }
-
         // Add apply button functionality
         const applyBtn = jobItem.querySelector('.apply-btn');
         if (applyBtn) {
-            applyBtn.addEventListener('click', (e) => {
-                // Don't prevent default - let the link open in new tab
+            applyBtn.addEventListener('click', () => {
                 handleJobApply(jobItem, job);
             });
         }
@@ -274,25 +226,8 @@ function displayJobs(jobs) {
             });
         }
 
-        // Add drag events
-        jobItem.addEventListener("dragstart", (e) => {
-            e.dataTransfer.effectAllowed = "move";
-            jobItem.classList.add("dragging");
-        });
-
-        jobItem.addEventListener("dragend", () => {
-            jobItem.classList.remove("dragging");
-        });
-
         jobListContainer.appendChild(jobItem);
     });
-
-    // Enable schedule buttons if APIs are initialized
-    if (window.gapiInited && window.gisInited) {
-        document.querySelectorAll('.schedule-interview').forEach(btn => {
-            btn.disabled = false;
-        });
-    }
 
     try {
         saveJobPositions();
@@ -307,16 +242,22 @@ function handleJobApply(jobItem, jobData) {
     const appliedContainer = document.querySelector("#applied .job-container");
     if (!appliedContainer) return;
 
-    // Wait a brief moment to ensure the link click is processed
+    // Wait a brief moment to ensure the animation looks smooth
     setTimeout(() => {
         // Clone the job item
         const clonedItem = jobItem.cloneNode(true);
         
-        // Remove the Apply Now button from the cloned item
-        const jobActions = clonedItem.querySelector('.job-actions');
-        const applyBtn = clonedItem.querySelector('.apply-btn');
-        if (applyBtn) {
-            applyBtn.remove();
+        // Update the job details for applied section
+        const jobDetails = clonedItem.querySelector('.job-details');
+        if (jobDetails) {
+            jobDetails.innerHTML = `
+                <p><strong>Company:</strong> ${jobData.company.display_name}</p>
+                <p><strong>Location:</strong> ${jobData.location.display_name}</p>
+                <p class="job-link"><strong>Job Link:</strong> <a href="${jobData.redirect_url}" target="_blank">View Job Details</a></p>
+                <div class="job-actions">
+                    <button class="schedule-interview" ${window.gapiInited && window.gisInited ? '' : 'disabled'}>Schedule Interview</button>
+                </div>
+            `;
         }
         
         // Add animation class for smooth transition
@@ -460,6 +401,9 @@ function createJobItem(job) {
     // Check if this is for the Applied section
     const isApplied = job.company.startsWith('Company:');
 
+    // Do not make job items draggable
+    jobItem.draggable = false;
+
     jobItem.innerHTML = `
         <div class="job-header">
             <h4>${job.title}</h4>
@@ -468,12 +412,12 @@ function createJobItem(job) {
         <div class="job-details">
             <p>${job.company}</p>
             <p>${job.location}</p>
+            <p class="job-link"><strong>Job Link:</strong> <a href="${job.applyLink}" target="_blank">View Job Details</a></p>
             <div class="job-actions">
                 ${!isApplied ? 
-                    `<a href="${job.applyLink}" target="_blank" class="apply-btn">Apply Now</a>` 
-                    : ''
+                    `<button class="apply-btn">Apply</button>` 
+                    : `<button class="schedule-interview" ${window.gapiInited && window.gisInited ? '' : 'disabled'}>Schedule Interview</button>`
                 }
-                <button class="schedule-interview" ${window.gapiInited && window.gisInited ? '' : 'disabled'}>Schedule Interview</button>
             </div>
         </div>
     `;
@@ -503,20 +447,23 @@ function createJobItem(job) {
         }, 300);
     });
 
-    const scheduleBtn = jobItem.querySelector('.schedule-interview');
-    if (scheduleBtn) {
-        scheduleBtn.addEventListener('click', () => {
-            const companyName = job.company.replace('Company:', '').trim();
-            handleScheduleInterview(job.title, companyName, jobItem);
-        });
-    }
-
-    // Only add apply button listener if it exists
-    const applyBtn = jobItem.querySelector('.apply-btn');
-    if (applyBtn) {
-        applyBtn.addEventListener('click', (e) => {
-            handleJobApply(jobItem, job);
-        });
+    // Add schedule interview button listener only for applied section
+    if (isApplied) {
+        const scheduleBtn = jobItem.querySelector('.schedule-interview');
+        if (scheduleBtn) {
+            scheduleBtn.addEventListener('click', () => {
+                const companyName = job.company.replace('Company:', '').trim();
+                handleScheduleInterview(job.title, companyName, jobItem);
+            });
+        }
+    } else {
+        // Add apply button listener for job listing section
+        const applyBtn = jobItem.querySelector('.apply-btn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                handleJobApply(jobItem, job);
+            });
+        }
     }
 
     return jobItem;
@@ -586,24 +533,25 @@ function showScheduleModal(jobTitle, companyName, jobItem) {
         titleInput.value = `Interview for ${jobTitle} at ${companyName}`;
     }
 
-    modal.style.display = "block";
-
     const form = document.getElementById('scheduleForm');
     if (form) {
+        // Store the job ID in the form for reference
+        form.setAttribute('data-job-id', jobItem.dataset.jobId);
+        // Store company name in the form for reference
+        form.setAttribute('data-company', companyName);
+        
         form.onsubmit = async (e) => {
             e.preventDefault();
             try {
                 await createCalendarEvent();
-                modal.style.display = "none";
-                form.reset();
-                
-                // Removed duplicate success alert
             } catch (error) {
                 console.error("Error scheduling interview:", error);
                 alert("Error scheduling interview. Please try again.");
             }
         };
     }
+
+    modal.style.display = "block";
 }
 
 // Add createCalendarEvent function if not already present
@@ -655,6 +603,18 @@ async function createCalendarEvent() {
         // Create and display the interview card
         createInterviewCard(eventData);
 
+        // Remove the job item from the applied section
+        const jobItem = document.querySelector(`#applied .job-item[data-job-id="${form.getAttribute('data-job-id')}"]`);
+        if (jobItem) {
+            // Add fade out animation
+            jobItem.classList.add('fade-out');
+            setTimeout(() => {
+                jobItem.remove();
+                // Update localStorage after removing the item
+                saveJobPositions();
+            }, 300);
+        }
+
         // Close the modal and reset the form
         modal.style.display = "none";
         form.reset();
@@ -681,11 +641,15 @@ function loadSavedPositions() {
     const savedPositions = getFromLocalStorage('jobPositions');
     if (!savedPositions) return;
 
-    // Clear only the job listing section
-    const jobListContainer = document.querySelector("#job-list .job-container");
-    if (jobListContainer) {
-        jobListContainer.innerHTML = '';
-    }
+    // Clear all containers except job-list
+    document.querySelectorAll('.column').forEach(column => {
+        if (column.id !== 'job-list') {
+            const container = column.querySelector('.job-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+        }
+    });
 
     Object.entries(savedPositions).forEach(([columnIndex, jobs]) => {
         const column = document.querySelectorAll('.column')[columnIndex];
@@ -795,12 +759,25 @@ function moveInterviewToPast(eventData) {
     const completedInterview = {
         ...eventData,
         status: 'completed',
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        section: 'interview' // Add section information
     };
     pastInterviews.unshift(completedInterview);
 
     // Save both updated lists
     saveToLocalStorage('upcomingInterviews', upcomingInterviews);
+    saveToLocalStorage('pastInterviews', pastInterviews);
+}
+
+// Add new function to update interview section
+function updateInterviewSection(interviewId, newSection) {
+    let pastInterviews = getFromLocalStorage('pastInterviews') || [];
+    pastInterviews = pastInterviews.map(interview => {
+        if (interview.id === interviewId) {
+            return { ...interview, section: newSection };
+        }
+        return interview;
+    });
     saveToLocalStorage('pastInterviews', pastInterviews);
 }
 
@@ -820,14 +797,29 @@ function loadSavedInterviews() {
     // Load past interviews
     const pastInterviews = getFromLocalStorage('pastInterviews') || [];
     const pastContainer = document.querySelector('.past-interviews');
+    const offerContainer = document.querySelector('#offer .job-container');
+    
     if (pastContainer) {
         pastContainer.innerHTML = ''; // Clear existing cards
-        
-        pastInterviews.forEach(interview => {
-            const pastCard = createPastInterviewCard(interview);
-            pastContainer.appendChild(pastCard);
-        });
     }
+    if (offerContainer) {
+        offerContainer.innerHTML = ''; // Clear existing cards
+    }
+    
+    pastInterviews.forEach(interview => {
+        const pastCard = createPastInterviewCard(interview);
+        // Place card in appropriate container based on section
+        if (interview.section === 'offer' && offerContainer) {
+            offerContainer.appendChild(pastCard);
+            // Remove status tag for offers
+            const statusTag = pastCard.querySelector('.status');
+            if (statusTag) {
+                statusTag.remove();
+            }
+        } else if (pastContainer) {
+            pastContainer.appendChild(pastCard);
+        }
+    });
 }
 
 // Function to save interview to localStorage
